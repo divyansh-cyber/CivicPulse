@@ -182,8 +182,8 @@ router.get("/:id/summary", requireRole("official", "moderator"), async (req, res
         moderationStatus: "visible",
       }).sort({ createdAt: 1 }).limit(200).lean();
 
-      const transcript = messages.map((m) => m.content).join("\n");
-      const aiRes = await axios.post(`${process.env.AI_SERVICE_URL}/summarize`, { transcript });
+      const aiBase = (process.env.AI_SERVICE_URL || "http://localhost:8000").replace(/\/+$/, "");
+      const aiRes = await axios.post(`${aiBase}/summarize`, { transcript });
 
       await Discussion.findByIdAndUpdate(discussion._id, {
         aiSummary: aiRes.data.summary,
@@ -191,7 +191,8 @@ router.get("/:id/summary", requireRole("official", "moderator"), async (req, res
       });
 
       res.json({ summary: aiRes.data.summary });
-    } catch {
+    } catch (err) {
+      console.error("⚠️ AI Summarize failed:", err.message);
       res.json({ summary: null, note: "AI service unavailable" });
     }
   } catch (err) {
@@ -202,12 +203,16 @@ router.get("/:id/summary", requireRole("official", "moderator"), async (req, res
 // Internal: run AI moderation asynchronously after message creation
 async function moderateMessageAsync(messageId, content, discussionId, io) {
   try {
+    const aiBase = (process.env.AI_SERVICE_URL || "http://localhost:8000").replace(/\/+$/, "");
+    console.log(`🤖 Requesting AI moderation for "${content.slice(0, 20)}..." at ${aiBase}/moderate`);
+
     const aiRes = await axios.post(
-      `${process.env.AI_SERVICE_URL}/moderate`,
+      `${aiBase}/moderate`,
       { content },
       { timeout: 10000 }
     );
 
+    console.log(`🤖 AI Moderation response:`, aiRes.data);
     const { toxic, offTopic, score, sentiment } = aiRes.data;
     let moderationStatus = "visible";
     if (score > 0.9) moderationStatus = "hidden";
@@ -224,8 +229,8 @@ async function moderateMessageAsync(messageId, content, discussionId, io) {
 
     // Always notify the room so the UI can update the message's aiFlag (red badge) and status
     io.to(`discussion:${discussionId}`).emit("message_moderated", updated);
-  } catch {
-    // AI service unavailable — leave message visible, moderation will be manual
+  } catch (err) {
+    console.error(`⚠️ AI Moderation failed:`, err.message);
   }
 }
 
