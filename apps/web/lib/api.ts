@@ -30,10 +30,21 @@ export async function apiFetch<T = unknown>(
   }
 
   const res = await fetch(`${BASE}${path}`, { ...fetchOpts, headers });
-  const data = await res.json();
+  
+  const text = await res.text();
+  let data: any;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(
+      !res.ok
+        ? `Server error (${res.status}): Please check backend URL connection.`
+        : "Received invalid non-JSON response from server."
+    );
+  }
 
   if (!res.ok) {
-    throw new Error(data?.error || `Request failed: ${res.status}`);
+    throw new Error(data?.error || `Request failed with status ${res.status}`);
   }
 
   return data as T;
