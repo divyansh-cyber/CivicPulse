@@ -12,29 +12,58 @@ export default function RegisterPage() {
   const [locationId, setLocationId] = useState("");
   
   const [locations, setLocations] = useState<Location[]>([]);
+  const [locLoading, setLocLoading] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Load locations for the dropdown
+  // Load locations for the dropdown with auto-retry for cold starts
   useEffect(() => {
-    async function fetchLocations() {
+    let isMounted = true;
+
+    async function fetchLocations(retries = 2) {
+      setLocLoading(true);
       try {
-        const res = await apiFetch<{ tree?: Location[]; locations?: Location[] }>("/locations/tree", { auth: false });
+        let res: any;
+        try {
+          res = await apiFetch<{ tree?: Location[]; locations?: Location[] }>("/locations/tree", { auth: false });
+        } catch {
+          // Fallback to /locations if tree fails
+          res = await apiFetch<{ locations?: Location[] }>("/locations", { auth: false });
+        }
+
         const all: Location[] = [];
-        const traverse = (node: any) => {
-          if (node.tier === "locality") all.push(node);
-          if (node.children) node.children.forEach(traverse);
-        };
-        (res.tree ?? res.locations ?? []).forEach(traverse);
-        setLocations(all);
-        if (all.length > 0) setLocationId(all[0]._id);
+        if (res.tree) {
+          const traverse = (node: any) => {
+            if (node.tier === "locality") all.push(node);
+            if (node.children) node.children.forEach(traverse);
+          };
+          res.tree.forEach(traverse);
+        } else if (res.locations) {
+          res.locations.filter((l: any) => l.tier === "locality").forEach((l: any) => all.push(l));
+        }
+
+        if (isMounted) {
+          setLocations(all);
+          if (all.length > 0) setLocationId(all[0]._id);
+          setError("");
+          setLocLoading(false);
+        }
       } catch (err) {
-        console.error("Failed to load locations", err);
-        setError("Failed to load locations. Please try again.");
+        if (retries > 0) {
+          setTimeout(() => {
+            if (isMounted) fetchLocations(retries - 1);
+          }, 3000);
+        } else if (isMounted) {
+          console.error("Failed to load locations", err);
+          setError("Failed to load locations. Please refresh the page.");
+          setLocLoading(false);
+        }
       }
     }
+
     fetchLocations();
+    return () => { isMounted = false; };
   }, []);
 
   async function handleRegister(e: React.FormEvent) {
@@ -111,14 +140,21 @@ export default function RegisterPage() {
               <select
                 id="location" name="location" required
                 value={locationId} onChange={(e) => setLocationId(e.target.value)}
-                className="relative block w-full rounded-lg border border-slate-200 bg-white py-3 px-4 text-slate-900 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6 appearance-none"
+                disabled={locLoading}
+                className="relative block w-full rounded-lg border border-slate-200 bg-white py-3 px-4 text-slate-900 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6 disabled:bg-slate-50 disabled:text-slate-400"
               >
-                <option value="" disabled>Select your neighborhood...</option>
-                {locations.map(loc => (
-                  <option key={loc._id} value={loc._id}>{loc.name}</option>
-                ))}
+                {locLoading ? (
+                  <option value="" disabled>Loading neighborhoods...</option>
+                ) : (
+                  <>
+                    <option value="" disabled>Select your neighborhood...</option>
+                    {locations.map((loc) => (
+                      <option key={loc._id} value={loc._id}>{loc.name}</option>
+                    ))}
+                  </>
+                )}
               </select>
-              {locations.length === 0 && (
+              {locations.length === 0 && !locLoading && (
                 <p className="mt-2 text-xs text-slate-500">No localities found. Make sure the API is seeded and running.</p>
               )}
             </div>
