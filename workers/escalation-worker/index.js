@@ -31,9 +31,13 @@ function slaMs(tier) {
 
 // Redis connection config
 const redisUrl = new URL(REDIS_URL);
+const isTls = redisUrl.protocol === "rediss:" || redisUrl.hostname.includes("upstash.io");
 const connection = {
   host: redisUrl.hostname,
   port: parseInt(redisUrl.port || "6379"),
+  username: redisUrl.username || undefined,
+  password: redisUrl.password ? decodeURIComponent(redisUrl.password) : undefined,
+  tls: isTls ? {} : undefined,
 };
 
 // Queues

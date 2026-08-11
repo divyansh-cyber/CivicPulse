@@ -1,13 +1,35 @@
 const { Queue } = require("bullmq");
 
-// Redis connection config — reads from env, defaults to localhost
-const connection = {
-  host: process.env.REDIS_HOST || "127.0.0.1",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-  lazyConnect: true,
-};
+// Redis connection config — supports REDIS_URL (Upstash, Aiven) or REDIS_HOST/PORT
+function getRedisConnection() {
+  if (process.env.REDIS_URL) {
+    try {
+      const parsed = new URL(process.env.REDIS_URL);
+      const isTls = parsed.protocol === "rediss:" || parsed.hostname.includes("upstash.io");
+      return {
+        host: parsed.hostname,
+        port: parseInt(parsed.port || "6379"),
+        username: parsed.username || undefined,
+        password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+        tls: isTls ? {} : undefined,
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        lazyConnect: true,
+      };
+    } catch (e) {
+      console.warn("⚠️ Invalid REDIS_URL, falling back to localhost", e.message);
+    }
+  }
+  return {
+    host: process.env.REDIS_HOST || "127.0.0.1",
+    port: parseInt(process.env.REDIS_PORT || "6379"),
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    lazyConnect: true,
+  };
+}
+
+const connection = getRedisConnection();
 
 let escalationQueue = null;
 let notifyQueue = null;
