@@ -30,7 +30,7 @@ const TIER_DOT: Record<string, string> = {
   city: "bg-indigo-500", municipality: "bg-blue-500",
   colony: "bg-emerald-500", locality: "bg-amber-500",
 };
-const ROLE_CONFIG: Record<string, { label: string; color: string; icon: JSX.Element; description: string }> = {
+const ROLE_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
   citizen:   { label: "Citizen",   color: "bg-slate-100 text-slate-700",   icon: <User size={15} />,     description: "Submit issues, vote on polls, and participate in discussions in your locality." },
   official:  { label: "Official",  color: "bg-indigo-100 text-indigo-700", icon: <Shield size={15} />,   description: "Manage issues, create polls, lock discussions, and monitor your jurisdiction." },
   moderator: { label: "Moderator", color: "bg-rose-100 text-rose-700",     icon: <BadgeCheck size={15} />, description: "City-wide moderation — review flagged messages and oversee all discussion threads." },

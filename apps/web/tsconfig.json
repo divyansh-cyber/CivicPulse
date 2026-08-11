@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@civicpulse/shared-types": ["./lib/types.ts"]
     }
   },
   "include": [

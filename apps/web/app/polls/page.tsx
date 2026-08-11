@@ -200,7 +200,7 @@ export default function PollsPage() {
                   <h3 className="mb-4 text-lg font-semibold text-slate-900">{poll.question}</h3>
 
                   <div className="space-y-2 mb-5">
-                    {poll.options.map((option, idx) => {
+                    {poll.options.map((option: string, idx: number) => {
                       const optionVotes = poll.voteCounts?.[option] || 0;
                       const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
                       const isSelected = poll.userVote === option;

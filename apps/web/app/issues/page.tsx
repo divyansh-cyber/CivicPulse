@@ -91,7 +91,7 @@ export default function IssuesPage() {
 
               <div className="flex items-center justify-between border-t border-slate-200 pt-4">
                 <div className="flex gap-2">
-                  {issue.tags?.map((tag) => (
+                  {issue.tags?.map((tag: string) => (
                     <span key={tag} className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">
                       #{tag}
                     </span>

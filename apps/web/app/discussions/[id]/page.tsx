@@ -75,7 +75,7 @@ export default function DiscussionThreadPage() {
 
     // Listen for lock/unlock broadcast
     socket.on("discussion_status_changed", ({ status }: { discussionId: string; status: string }) => {
-      setDiscussion((prev) => prev ? { ...prev, status: status as any } : prev);
+      setDiscussion((prev: Discussion | null) => prev ? { ...prev, status: status as any } : prev);
     });
 
     return () => { socket.disconnect(); };
@@ -124,7 +124,7 @@ export default function DiscussionThreadPage() {
         `/discussions/${discussionId}/lock`,
         { method: "PATCH" }
       );
-      setDiscussion((prev) => prev ? { ...prev, status: res.discussion.status as any } : prev);
+      setDiscussion((prev: Discussion | null) => prev ? { ...prev, status: res.discussion.status as any } : prev);
     } catch (err: any) {
       alert(err.message || "Failed to update discussion status");
     } finally {

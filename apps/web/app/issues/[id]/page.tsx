@@ -113,7 +113,7 @@ export default function IssueDetailPage() {
         <h1 className="mb-4 text-3xl font-bold text-slate-900">{issue.title}</h1>
         <p className="mb-6 whitespace-pre-wrap text-slate-700">{issue.description}</p>
         <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-          {issue.tags?.map((tag) => (
+          {issue.tags?.map((tag: string) => (
             <span key={tag} className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">#{tag}</span>
           ))}
         </div>
