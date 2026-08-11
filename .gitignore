@@ -58,6 +58,7 @@ next-env.d.ts
 # IDE / Editor
 .idea/
 .vscode/
+.vs/
 *.swp
 *.swo
 
