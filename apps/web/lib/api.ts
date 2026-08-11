@@ -1,7 +1,7 @@
 // Thin wrapper around fetch that prepends the API base URL and
 // injects the JWT from localStorage automatically.
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000").replace(/\/+$/, "");
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
