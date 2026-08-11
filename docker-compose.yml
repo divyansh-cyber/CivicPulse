@@ -1,0 +1,109 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: civicpulse_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: civicpulse
+
+  redis:
+    image: redis:7-alpine
+    container_name: civicpulse_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api:
+    build:
+      context: ./apps/api
+    container_name: civicpulse_api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mongo
+      - redis
+    env_file:
+      - ./apps/api/.env
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+
+  escalation-worker:
+    build:
+      context: ./workers/escalation-worker
+    container_name: civicpulse_escalation
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - redis
+    env_file:
+      - ./workers/escalation-worker/.env
+    volumes:
+      - ./workers/escalation-worker:/app
+      - /app/node_modules
+
+  analytics-worker:
+    build:
+      context: ./workers/analytics-worker
+    container_name: civicpulse_analytics
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    env_file:
+      - ./workers/analytics-worker/.env
+    volumes:
+      - ./workers/analytics-worker:/app
+      - /app/node_modules
+
+  uptime-checker:
+    build:
+      context: ./workers/uptime-checker
+    container_name: civicpulse_uptime
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - api
+    env_file:
+      - ./workers/uptime-checker/.env
+    volumes:
+      - ./workers/uptime-checker:/app
+      - /app/node_modules
+
+  ai-moderation:
+    build:
+      context: ./services/ai-moderation
+    container_name: civicpulse_ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./services/ai-moderation/.env
+    volumes:
+      - ./services/ai-moderation:/app
+
+  web:
+    build:
+      context: ./apps/web
+    container_name: civicpulse_web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    env_file:
+      - ./apps/web/.env.local
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  mongo_data:
+  redis_data:
